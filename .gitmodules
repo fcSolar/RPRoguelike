@@ -1,0 +1,3 @@
+[submodule "RPRoguelike/random"]
+	path = RPRoguelike/random
+	url = https://github.com/effolkronium/random

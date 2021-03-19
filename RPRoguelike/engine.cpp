@@ -1,0 +1,198 @@
+#include "engine.h"
+
+void engine::init()
+{
+
+	if(SDL_Init(SDL_INIT_VIDEO) == 0)
+	{
+		m_win = SDL_CreateWindow("RPRoguelike", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, WINDOW_WIDTH, WINDOW_HEIGHT, SDL_WINDOW_SHOWN);
+
+		if(m_win)
+		{
+			m_renderer = SDL_CreateRenderer(m_win, -1, SDL_RENDERER_ACCELERATED);
+
+			if(m_renderer)
+			{
+				IMG_Init(IMG_INIT_PNG);
+			}
+		}
+	}
+
+	loadTexture("font4.png");
+}
+
+void engine::run()
+{
+	bool running{true};
+
+	SDL_Event evnt;
+	
+	level.bindDrawFn(drawFn);
+
+	m_entities.emplace_back(new player);
+	
+	m_SDLToInternalKeymap.insert({SDLK_UP, keyCode::KEY_UP});
+	m_SDLToInternalKeymap.insert({SDLK_DOWN, keyCode::KEY_DOWN});
+	m_SDLToInternalKeymap.insert({SDLK_LEFT, keyCode::KEY_LEFT});
+	m_SDLToInternalKeymap.insert({SDLK_RIGHT, keyCode::KEY_RIGHT});
+
+
+
+	level.generate(
+		std::make_pair<coord, coord>({0,0}, {WINDOW_WIDTH / m_tileWidth, 
+									 WINDOW_HEIGHT / m_tileHeight}));
+	level.addPlayer();
+	level.draw();
+	
+	SDL_RenderPresent(m_renderer);
+
+	bool newMessage{false};
+
+	while(running)
+	{
+		SDL_WaitEvent(&evnt);
+
+		switch(evnt.type)
+		{
+			case SDL_QUIT:
+				running = false;
+				break;
+			case SDL_KEYDOWN:
+			{
+				std::unordered_map<int, keyCode>::iterator e_KeyCodeIt = m_SDLToInternalKeymap.find(evnt.key.keysym.sym);
+				keyCode e_KeyCode{keyCode::KEY_NULL};
+
+				if(e_KeyCodeIt != m_SDLToInternalKeymap.end())
+					e_KeyCode = e_KeyCodeIt->second;
+				else
+					break;
+
+				std::shared_ptr<message> e_Msg(new msg_KeyPress(e_KeyCode));
+				std::shared_ptr<message> r_Msg{nullptr};
+				
+				r_Msg = m_entities.at(0)->update(e_Msg);
+				
+				m_msgQueue.emplace_back(r_Msg);
+
+				newMessage = true;
+
+				break;
+
+			}
+			default:
+				break;
+		}
+
+		if(newMessage)
+			readMessages();
+
+		newMessage = false;
+
+	}
+}
+
+void engine::exit()
+{
+	IMG_Quit();
+	SDL_Quit();
+}
+
+void engine::loadTexture(std::string path)
+{
+	SDL_Surface *surf = IMG_Load(path.c_str());
+
+	if(surf)
+	{
+		m_sheet = SDL_CreateTextureFromSurface(m_renderer, surf);
+
+		if(m_sheet)
+		{
+			m_tileWidth = 9;
+			m_tileHeight = 16;
+
+			m_sheetWidth = 32;
+			m_sheetHeight = 8;
+
+			SDL_FreeSurface(surf);
+		}
+	}
+}
+
+void engine::putTile(int tileX, int tileY, int x, int y)
+{
+	SDL_Rect srcR;
+	SDL_Rect dstR;
+
+	srcR.w = m_tileWidth;
+	srcR.h = m_tileHeight;
+	srcR.x = tileX * m_tileWidth;
+	srcR.y = tileY * m_tileHeight;
+
+	dstR.w = m_tileWidth;
+	dstR.h = m_tileHeight;
+	dstR.x = x * m_tileWidth;
+	dstR.y = y * m_tileHeight;
+
+	SDL_RenderCopy(m_renderer, m_sheet, &srcR, &dstR);
+}
+
+void engine::putTile(uint8_t tile, int x, int y)
+{
+	SDL_Rect srcR;
+	SDL_Rect dstR;
+
+	srcR.w = m_tileWidth;
+	srcR.h = m_tileHeight;
+
+	dstR.w = m_tileWidth;
+	dstR.h = m_tileHeight;
+	dstR.x = x * m_tileWidth;
+	dstR.y = y * m_tileHeight;
+
+	switch(tile)
+	{
+		case 0: //'#'
+			srcR.x = 3 * m_tileWidth;
+			srcR.y = 1 * m_tileHeight;
+			break;
+		case 1: //middle dot
+			srcR.x = 25 * m_tileWidth;
+			srcR.y = 7 * m_tileHeight;
+			break;
+		case 2: //'@'
+			srcR.x = 0;
+			srcR.y = 2 * m_tileHeight;
+			break;
+		default:
+			break;
+	}
+	SDL_RenderCopy(m_renderer, m_sheet, &srcR, &dstR);
+	//SDL_RenderPresent(m_renderer);
+}
+
+
+void engine::readMessages()
+{
+	while(m_msgQueue.size() > 0)
+	{
+		std::shared_ptr<message> m1 = m_msgQueue.back();
+		switch(m1->m_messageType)
+		{
+			case msgType::MESSAGE_TYPE_PMOVE:
+			{
+				std::shared_ptr<msg_playerMove> m2 = std::static_pointer_cast<msg_playerMove>(m1);
+				if(level.movePlayer(m2->m_direction.first, m2->m_direction.second))
+				{
+					level.draw();
+					SDL_RenderPresent(m_renderer);
+				}
+				
+				break;
+			}
+			default:
+				break;
+		}
+
+		m_msgQueue.pop_back();
+	}
+}
