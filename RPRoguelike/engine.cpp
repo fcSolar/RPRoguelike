@@ -45,7 +45,7 @@ void engine::run()
 	level.addPlayer();
 	level.draw();
 	
-	//SDL_RenderPresent(m_renderer);
+	SDL_RenderPresent(m_renderer);
 
 	bool newMessage{false};
 
