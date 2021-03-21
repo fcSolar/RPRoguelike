@@ -4,12 +4,12 @@
 void gameMap::generate(std::pair<coord, coord> mapSize)
 {
 
-	for(int i{0}; i < (mapSize.second.y - mapSize.first.y); i++)
+	for(int i = 0; i < (mapSize.second.y - mapSize.first.y); i++)
 	{
 		std::vector<uint8_t> temp;
 		std::vector<bool> temp2;
 
-		for(int j{0}; j < (mapSize.second.x - mapSize.first.x); j++)
+		for(int j = 0; j < (mapSize.second.x - mapSize.first.x); j++)
 		{
 			temp.push_back(0);
 			temp2.push_back(true);
@@ -66,29 +66,97 @@ void gameMap::generate(std::pair<coord, coord> mapSize)
 		}
 	}
 
-	auto drawHallHoriz{[this](int first, int second, int third) 
+	auto drawHallHoriz{[this](int start, int end, int y) 
 					   { 
-						   for(int i = first; i < first + second; i++) 
+						   for(int i = start; i < end; i++) 
 						   { 
-							   m_level[third][i] = 1;
-							   m_levelTouched[third][i] = true;
+							   m_level[y][i] = 1;
+							   m_levelTouched[y][i] = true;
 						   } 
 					   }};
 
-	auto drawHallVert{[this](int first, int second, int third) 
+	auto drawHallVert{[this](int start, int end, int x) 
 					  { 
-						  for(int i = first; i < first + second; i++) 
+						  for(int i = start; i < end; i++)
 						  { 
-							  m_level[i][third] = 1; 
-							  m_levelTouched[i][third] = true;
+							  m_level[i][x] = 1; 
+							  m_levelTouched[i][x] = true;
 						  } 
 					  }};
 
+	//auto drawHalls{[this, mapSize](coord pt1, coord pt2)
+	//			{	
+	//				assert((std::min(pt1.x, pt2.x) + std::abs(pt2.x - pt1.x) < mapSize.second.x, 
+	//						"The horizontal width is out of bounds"));
+	//				assert((std::min(pt1.y, pt2.y) + std::abs(pt2.y - pt1.y) < mapSize.second.y,
+	//						"The vertical height is out of bounds"));
+
+	//				int xDrawLevel{-1};
+	//				int yDrawLevel{-1};
+
+	//				if(pt1.y > pt2.y)
+	//				{
+	//					if(pt1.x > pt2.x)
+	//					{
+	//						xDrawLevel = pt1.y;
+	//						yDrawLevel = pt1.x;
+	//					}
+	//					else
+	//					{
+	//						xDrawLevel = pt2.y;
+	//						yDrawLevel = pt2.x;
+	//					}
+	//						
+	//				}
+	//				else
+	//				{
+	//					if(pt1.x > pt2.x)
+	//					{
+	//						xDrawLevel = pt2.y;
+	//						yDrawLevel = pt2.x;
+	//					}
+	//					else
+	//					{
+	//						xDrawLevel = pt1.y;
+	//						yDrawLevel = pt1.x;
+	//					}
+	//				}
+
+
+	//				for(int i = std::min(pt1.x, pt2.x); i < std::max(pt1.x, pt2.x); i++)
+	//				{
+	//					m_level[xDrawLevel][i] = 1;
+	//					m_levelTouched[xDrawLevel][i] = true;
+	//				}
+	//				
+	//				for(int i = std::min(pt1.y, pt2.y); i < std::max(pt1.y, pt2.y); i++)
+	//				{
+	//					m_level[i][yDrawLevel] = 1;
+	//					m_levelTouched[i][yDrawLevel] = true;
+	//				}
+
+	//			}};
+
 	coord p1{-1,-1};
 	coord p2{-1,-1};
+	//int it{0};
 
 	for(auto &e : pts)
 	{
+		
+		//if(it == 0)
+		//{
+		//	p2 = e;
+		//}
+		//else
+		//{
+		//	p1 = p2;
+		//	p2 = e;
+		//	
+		//	drawHalls(p1, p2);
+		//}
+
+		//it++;
 		using random = effolkronium::random_static;
 
 		if(p1.x == -1 && p2.x == -1)
@@ -100,8 +168,8 @@ void gameMap::generate(std::pair<coord, coord> mapSize)
 			
 			p2 = e;
 
-			int w{p2.x - p1.x};
-			int h{p2.y - p1.y};
+			int w{std::abs(p2.x - p1.x)};
+			int h{std::abs(p2.y - p1.y)};
 
 			if(w < 0)
 			{
@@ -109,31 +177,31 @@ void gameMap::generate(std::pair<coord, coord> mapSize)
 				{
 					if(random::get<bool>())
 					{
-						drawHallHoriz(p2.x, abs(w), p1.y);
-						drawHallVert(p2.y, abs(h), p2.x);
+						drawHallHoriz(p2.x, p1.x, p1.y);
+						drawHallVert(p2.y, p1.y, p2.x);
 					}
 					else
 					{
-						drawHallHoriz(p2.x, abs(w), p2.y);
-						drawHallVert(p2.y, abs(h), p2.x);
+						drawHallHoriz(p2.x, p1.x, p2.y);
+						drawHallVert(p2.y, p1.y, p2.x);
 					}
 				}
 				else if(h > 0)
 				{
 					if(random::get<bool>())
 					{
-						drawHallHoriz(p2.x, abs(w), p1.y);
-						drawHallVert(p1.y, abs(h), p2.x);
+						drawHallHoriz(p2.x, p1.x, p1.y);
+						drawHallVert(p1.y, p2.y, p2.x);
 					}
 					else
 					{
-						drawHallHoriz(p2.x, abs(w), p2.y);
-						drawHallVert(p1.y, abs(h), p1.x);
+						drawHallHoriz(p2.x, p1.x, p2.y);
+						drawHallVert(p1.y, p2.y, p1.x);
 					}
 				}
 				else
 				{
-					drawHallHoriz(p2.x, abs(w), p2.y);
+					drawHallHoriz(p2.x, p1.x, p2.y);
 				}
 			}
 			else if(w > 0)
@@ -142,42 +210,42 @@ void gameMap::generate(std::pair<coord, coord> mapSize)
 				{
 					if(random::get<bool>())
 					{
-						drawHallHoriz(p1.x, abs(w), p2.y);
-						drawHallVert(p2.y, abs(h), p1.x);
+						drawHallHoriz(p1.x, p2.x, p2.y);
+						drawHallVert(p2.y, p1.y, p1.x);
 					}
 					else
 					{
-						drawHallHoriz(p1.x, abs(w), p1.y);
-						drawHallVert(p2.y, abs(h), p2.x);
+						drawHallHoriz(p1.x, p2.x, p1.y);
+						drawHallVert(p2.y, p1.y, p2.x);
 					}
 				}
 				else if(h > 0)
 				{
 					if(p1.y + h >= mapSize.second.y)
 					{
-						drawHallHoriz(p1.x, abs(w), p1.y);
-						drawHallVert(p2.y, abs(h), p2.x);
+						drawHallHoriz(p1.x, p2.x, p1.y);
+						drawHallVert(p2.y, p1.y, p2.x);
 					}
 					else
 					{
-						drawHallHoriz(p1.x, abs(w), p2.y);
-						drawHallVert(p1.y, abs(h), p1.y);
+						drawHallHoriz(p1.x, p2.x, p2.y);
+						drawHallVert(p1.y, h, p1.y);
 					}
 				}
 				else
 				{
-					drawHallHoriz(p1.x, abs(w), p1.y);
+					drawHallHoriz(p1.x, p2.x, p1.y);
 				}
 			}
 			else
 			{
 				if(h < 0)
 				{
-					drawHallVert(p2.y, abs(h), p2.x);
+					drawHallVert(p2.y, p1.y, p2.x);
 				}
 				else
 				{
-					drawHallVert(p1.y, abs(h), p1.x);
+					drawHallVert(p1.y, p2.y, p1.x);
 				}
 			}
 		}
@@ -186,8 +254,8 @@ void gameMap::generate(std::pair<coord, coord> mapSize)
 			p1 = p2;
 			p2 = e;
 
-			int w{p2.x - p1.x};
-			int h{p2.y - p1.y};
+			int w{std::abs(p2.x - p1.x)};
+			int h{std::abs(p2.y - p1.y)};
 
 			if(w < 0)
 			{
@@ -195,31 +263,31 @@ void gameMap::generate(std::pair<coord, coord> mapSize)
 				{
 					if(random::get<bool>())
 					{
-						drawHallHoriz(p2.x, abs(w), p1.y);
-						drawHallVert(p2.y, abs(h), p2.x);
+						drawHallHoriz(p2.x, p1.x, p1.y);
+						drawHallVert(p2.y, p1.y, p2.x);
 					}
 					else
 					{
-						drawHallHoriz(p2.x, abs(w), p2.y);
-						drawHallVert(p2.y, abs(h), p2.x);
+						drawHallHoriz(p2.x, p1.x, p2.y);
+						drawHallVert(p2.y, p1.y, p2.x);
 					}
 				}
 				else if(h > 0)
 				{
 					if(random::get<bool>())
 					{
-						drawHallHoriz(p2.x, abs(w), p1.y);
-						drawHallVert(p1.y, abs(h), p2.x);
+						drawHallHoriz(p2.x, p1.x, p1.y);
+						drawHallVert(p1.y, p2.y, p2.x);
 					}
 					else
 					{
-						drawHallHoriz(p2.x, abs(w), p2.y);
-						drawHallVert(p1.y, abs(h), p1.x);
+						drawHallHoriz(p2.x, p1.x, p2.y);
+						drawHallVert(p1.y, p2.y, p1.x);
 					}
 				}
 				else
 				{
-					drawHallHoriz(p2.x, abs(w), p2.y);
+					drawHallHoriz(p2.x, p1.x, p2.y);
 				}
 			}
 			else if(w > 0)
@@ -228,42 +296,42 @@ void gameMap::generate(std::pair<coord, coord> mapSize)
 				{
 					if(random::get<bool>())
 					{
-						drawHallHoriz(p1.x, abs(w), p2.y);
-						drawHallVert(p2.y, abs(h), p1.x);
+						drawHallHoriz(p1.x, p2.x, p2.y);
+						drawHallVert(p2.y, p1.y, p1.x);
 					}
 					else
 					{
-						drawHallHoriz(p1.x, abs(w), p1.y);
-						drawHallVert(p2.y, abs(h), p2.x);
+						drawHallHoriz(p1.x, p2.x, p1.y);
+						drawHallVert(p2.y, p1.y, p2.x);
 					}
 				}
 				else if(h > 0)
 				{
 					if(p1.y + h >= mapSize.second.y)
 					{
-						drawHallHoriz(p1.x, abs(w), p1.y);
-						drawHallVert(p2.y, abs(h), p2.x);
+						drawHallHoriz(p2.x, p1.x, p1.y);
+						drawHallVert(p2.y, p1.y, p2.x);
 					}
 					else
 					{
-						drawHallHoriz(p1.x, abs(w), p2.y);
-						drawHallVert(p1.y, abs(h), p1.x);
+						drawHallHoriz(p1.x, p2.x, p2.y);
+						drawHallVert(p1.y, p2.y, p1.x);
 					}
 				}
 				else
 				{
-					drawHallHoriz(p1.x, abs(w), p1.y);
+					drawHallHoriz(p1.x, p2.x, p1.y);
 				}
 			}
 			else
 			{
 				if(h < 0)
 				{
-					drawHallVert(p2.y, abs(h), p2.x);
+					drawHallVert(p2.y, p1.y, p2.x);
 				}
 				else
 				{
-					drawHallVert(p1.y, abs(h), p1.x);
+					drawHallVert(p1.y, p2.y, p1.x);
 				}
 			}
 		}
@@ -335,7 +403,7 @@ bool gameMap::movePlayer(int x, int y)
 	
 	if(m_level[oldPos.y + y][oldPos.x + x] != 0)
 	{
-		m_importantTiles.at(0).coords = {oldPos.x + x, oldPos.y + y};
+		m_importantTiles[0].coords = {oldPos.x + x, oldPos.y + y};
 
 		m_level[oldPos.y][oldPos.x] = 1;
 		m_level[oldPos.y + y][oldPos.x + x] = 2;
@@ -374,7 +442,7 @@ coord gameMap::addPlayer()
 
 	m_level[playerPos.y][playerPos.x] = 2;
 	m_levelTouched[playerPos.y][playerPos.x] = true;
-	m_importantTiles.push_back({{playerPos.x, playerPos.y}, 2});
+	m_importantTiles.push_back({{playerPos.x, playerPos.y}, tileType::TILE_PLAYER});
 
 	return playerPos;
 }

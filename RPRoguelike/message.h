@@ -7,8 +7,9 @@ enum class msgType
 	MESSAGE_TYPE_NULL,
 	MESSAGE_TYPE_KEYPRESS,
 	MESSAGE_TYPE_PMOVE,
+	MESSAGE_TYPE_REGEN_MAP
 };
-
+ 
 enum class keyCode
 {
 	KEY_NULL,
@@ -16,6 +17,7 @@ enum class keyCode
 	KEY_DOWN,
 	KEY_LEFT,
 	KEY_RIGHT,
+	KEY_SPACE
 };
 
 struct message
@@ -43,3 +45,10 @@ struct msg_playerMove: public message
 	}
 };
 
+struct msg_regenMap: public message
+{
+	msg_regenMap()
+	{
+		m_messageType = msgType::MESSAGE_TYPE_REGEN_MAP;
+	}
+};

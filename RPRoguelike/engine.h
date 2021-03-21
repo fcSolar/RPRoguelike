@@ -1,17 +1,17 @@
 #pragma once
 
-#include <string>
+#include <string> //for std::string
+#include <functional> //for std::function
+//#include <cmath> //for std::
+#include <memory>
+#include <unordered_map>
 #include "SDL.h"
 #include "SDL_image.h"
 #include "map.h"
 #include "geom.h"
-#include <functional>
-#include <cmath>
-#include <memory>
-#include <unordered_map>
 #include "entity.h"
 #include "message.h"
-
+ 
 
 //TODO: Split render stuff out into new class. (tilesheet, render fucntions, etc.)
 
@@ -20,16 +20,16 @@ class engine
 	const int WINDOW_WIDTH{1602};
 	const int WINDOW_HEIGHT{912};
 	
-	SDL_Texture *m_sheet;
+	SDL_Texture *m_sheet{nullptr};
 
-	int m_tileWidth;   //in px
-	int m_tileHeight;  //in px
+	int m_tileWidth{-1};   //in px
+	int m_tileHeight{-1};  //in px
 
-	int m_sheetWidth;  //in tiles
-	int m_sheetHeight; //in tiles
+	int m_sheetWidth{-1};  //in tiles
+	int m_sheetHeight{-1}; //in tiles
 
-	SDL_Window *m_win;
-	SDL_Renderer *m_renderer;
+	SDL_Window *m_win{nullptr};
+	SDL_Renderer *m_renderer{nullptr};
 
 	gameMap level;
 
@@ -39,8 +39,8 @@ class engine
 
 	std::vector<std::shared_ptr<message>> m_msgQueue;
 
-	std::function<void(uint8_t tile, int x, int y)> drawFn = [&](auto tile, auto x, auto y) { putTile(tile, x, y); };
-	//TODO: map of tile aliases, key: string, value: uint8_t
+	std::function<void(uint8_t tile, int x, int y)> 
+		drawFn = [&](auto tile, auto x, auto y) { putTile(tile, x, y); };
 
 public:
 	void init();
@@ -48,9 +48,8 @@ public:
 	void exit();
 
 private:
-	void loadTexture(std::string path);
-	void putTile(int tileX, int tileY, int x, int y); //TODO: change to take coord struct instead.
-	void putTile(uint8_t tile, int x, int y);
+	void loadTexture(const char* path);
+	void putTile(uint8_t tile, int x, int y); //TODO: change to take tileData struct
 	void readMessages();
 };
 

@@ -1,28 +1,30 @@
 #include "entity.h"
 
-std::shared_ptr<message> player::keyInput(keyCode key)
+std::shared_ptr<message> ety_player::keyInput(keyCode key)
 {
 	switch(key)
 	{
 		case keyCode::KEY_UP:
 			return std::shared_ptr<msg_playerMove>(new msg_playerMove(0,-1));
-		case keyCode:: KEY_DOWN:
+		case keyCode::KEY_DOWN:
 			return std::shared_ptr<msg_playerMove>(new msg_playerMove(0, 1));
 		case keyCode::KEY_LEFT:
 			return std::shared_ptr<msg_playerMove>(new msg_playerMove(-1, 0));
 		case keyCode::KEY_RIGHT:
 			return std::shared_ptr<msg_playerMove>(new msg_playerMove(1, 0));
+		case keyCode::KEY_SPACE:
+			return std::shared_ptr<msg_regenMap>(new msg_regenMap());
 		default:
 			return nullptr;
 	}
 }
-
-player::player()
+ 
+ety_player::ety_player()
 {
-
+	m_entityType = entityTypes::ENTITY_PLAYER;
 }
 
-std::shared_ptr<message> player::update(const std::shared_ptr<message> &msg)
+std::shared_ptr<message> ety_player::update(const std::shared_ptr<message> &msg)
 {
 	switch(msg->m_messageType)
 	{
