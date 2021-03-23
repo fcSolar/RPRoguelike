@@ -48,4 +48,6 @@ public:
 	bool movePlayer(int x, int y);
 
 	coord addPlayer();
+
+	void clearImportantTiles();
 };

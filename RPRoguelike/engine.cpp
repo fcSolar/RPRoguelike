@@ -173,8 +173,10 @@ void engine::readMessages()
 			}
 			case msgType::MESSAGE_TYPE_REGEN_MAP:
 				level.clear();
+				level.clearImportantTiles();
 				level.generate(std::make_pair<coord, coord>({0,0}, {WINDOW_WIDTH / m_tileWidth,
 									 WINDOW_HEIGHT / m_tileHeight}));
+				level.addPlayer();
 				level.draw();
 				SDL_RenderPresent(m_renderer);
 
