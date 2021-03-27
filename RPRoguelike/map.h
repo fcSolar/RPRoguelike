@@ -1,11 +1,10 @@
 #pragma once
 
-#include <functional> //for std::function
-#include <vector> //for std::vector
+#include <functional>
+#include <vector>
 #include <utility> //for std::pair
-#include <cmath> //for std::abs
-#include <bitset> //for std::bitset
-#include <cassert>
+#include <cmath>
+#include <bitset>
 #include "geom.h"
 #include "bspNode.h"
 #include "SDL.h"
@@ -28,12 +27,19 @@ struct tileData
 
 class gameMap
 {
-	std::vector<std::vector<uint8_t>> m_level;
-	std::vector<std::vector<bool>> m_levelTouched;
+	//std::vector<std::vector<uint8_t>> m_level;
+	//std::vector<std::vector<bool>> m_levelTouched;
+	std::vector<uint8_t> m_level;
+	std::vector<bool> m_levelTouched;
+
+	int m_levelWidth;
+	int m_levelHeight;
 
 	std::function<void(uint8_t, int, int)> m_drawFn;
 
 	std::vector<tileData> m_importantTiles;
+
+	int ind2d(int x, int y) { return y * m_levelWidth + x; }
 
 
 public:

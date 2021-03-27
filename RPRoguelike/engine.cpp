@@ -179,7 +179,7 @@ void engine::readMessages()
 				level.addPlayer();
 				level.draw();
 				SDL_RenderPresent(m_renderer);
-
+				break;
 			default:
 				break;
 		}

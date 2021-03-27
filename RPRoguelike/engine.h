@@ -1,8 +1,7 @@
 #pragma once
 
-#include <string> //for std::string
-#include <functional> //for std::function
-//#include <cmath> //for std::
+#include <string>
+#include <functional>
 #include <memory>
 #include <unordered_map>
 #include "SDL.h"

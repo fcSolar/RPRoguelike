@@ -3,20 +3,13 @@
 
 void gameMap::generate(std::pair<coord, coord> mapSize)
 {
+	m_levelWidth = mapSize.second.x - mapSize.first.x;
+	m_levelHeight = mapSize.second.y - mapSize.first.y;
 
-	for(int i = 0; i < (mapSize.second.y - mapSize.first.y); i++)
+	for(int i = 0; i < m_levelWidth * m_levelHeight; i++)
 	{
-		std::vector<uint8_t> temp;
-		std::vector<bool> temp2;
-
-		for(int j = 0; j < (mapSize.second.x - mapSize.first.x); j++)
-		{
-			temp.push_back(0);
-			temp2.push_back(true);
-		}
-
-		m_level.push_back(temp);
-		m_levelTouched.push_back(temp2);
+		m_level.push_back(0);
+		m_levelTouched.push_back(true);
 	}
 
 	bspNode *root = new bspNode(0, 0, 178, 57);
@@ -27,7 +20,7 @@ void gameMap::generate(std::pair<coord, coord> mapSize)
 
 	std::vector<bspNode*> temp;
 
-	for(int i = 0; i < 7; i++)
+	for(int i = 0; i < 8; i++)
 	{
 		for(auto e : tree)
 		{
@@ -66,24 +59,6 @@ void gameMap::generate(std::pair<coord, coord> mapSize)
 		}
 	}
 
-	auto drawHallHoriz{[this](int start, int end, int y) 
-					   { 
-						   for(int i = start; i < end; i++) 
-						   { 
-							   m_level[y][i] = 1;
-							   m_levelTouched[y][i] = true;
-						   } 
-					   }};
-
-	auto drawHallVert{[this](int start, int end, int x) 
-					  { 
-						  for(int i = start; i < end; i++)
-						  { 
-							  m_level[i][x] = 1; 
-							  m_levelTouched[i][x] = true;
-						  } 
-					  }};
-
 	auto drawHalls{[this, mapSize](coord pt1, coord pt2)
 	{
 		int xDrawLevel{-1};
@@ -120,17 +95,16 @@ void gameMap::generate(std::pair<coord, coord> mapSize)
 
 		for(int i = std::min(pt1.x, pt2.x); i <= std::max(pt1.x, pt2.x); i++)
 		{
-			m_level[xDrawLevel][i] = 1;
-			m_levelTouched[xDrawLevel][i] = true;
+			m_level[ind2d(i,xDrawLevel)] = 1;
+			m_levelTouched[ind2d(i,xDrawLevel)] = true;
 		}
 
 		for(int i = std::min(pt1.y, pt2.y); i <= std::max(pt1.y, pt2.y); i++)
 		{
-			m_level[i][yDrawLevel] = 1;
-			m_levelTouched[i][yDrawLevel] = true;
+			m_level[ind2d(yDrawLevel,i)] = 1;
+			m_levelTouched[ind2d(yDrawLevel,i)] = true;
 		}
-	}
-};
+	}};
 
 	coord p1{-1,-1};
 	coord p2{-1,-1};
@@ -162,41 +136,24 @@ void gameMap::generate(std::pair<coord, coord> mapSize)
 
 void gameMap::draw()
 {
-	int x{0};
-	int y{0};
+	int ind{0};
 
-	for(auto &e : m_level)
+	for(auto e : m_level)
 	{
-		for(auto &ee : e)
-		{
+		
 			
-			if(m_levelTouched[y][x])
-			{
-				m_drawFn(ee, x, y);
-				m_levelTouched[y][x] = false;
-			}
-				
-
-			x++;
+		if(m_levelTouched[ind])
+		{
+			m_drawFn(e, ind % m_levelWidth, ind / m_levelWidth);
+			m_levelTouched[ind] = false;
 		}
 
-		x = 0;
-		y++;
+		ind++;
 	}
 }
 
 void gameMap::clear()
 {
-	for(auto &e : m_level)
-	{
-		e.clear();
-	}
-
-	for(auto &e : m_levelTouched)
-	{
-		e.clear();
-	}
-
 	m_level.clear();
 	m_levelTouched.clear();
 }
@@ -208,25 +165,26 @@ void gameMap::drawRoom(rect rm)
 	{
 		for(int j = rm.pos.x; j < rm.pos.x + rm.width; j++)
 		{
-			m_level[i][j] = 1;
-			m_levelTouched[i][j] = true;
+			m_level[ind2d(j,i)] = 1;
+			m_levelTouched[ind2d(j, i)] = true;
 		}
 	}
 }
 
 bool gameMap::movePlayer(int x, int y)
 {
-	coord oldPos = m_importantTiles.at(0).coords;
+	coord oldPos{m_importantTiles.at(0).coords};
+	coord newPos{oldPos.x + x,oldPos.y + y};
 	
-	if(m_level[oldPos.y + y][oldPos.x + x] != 0)
+	if(m_level[ind2d(newPos.x, newPos.y)] != 0)
 	{
 		m_importantTiles[0].coords = {oldPos.x + x, oldPos.y + y};
 
-		m_level[oldPos.y][oldPos.x] = 1;
-		m_level[oldPos.y + y][oldPos.x + x] = 2;
+		m_level[ind2d(oldPos.x,oldPos.y)] = 1;
+		m_level[ind2d(newPos.x, newPos.y)] = 2;
 
-		m_levelTouched[oldPos.y][oldPos.x] = true;
-		m_levelTouched[oldPos.y + y][oldPos.x + x] = true;
+		m_levelTouched[ind2d(oldPos.x, oldPos.y)] = true;
+		m_levelTouched[ind2d(newPos.x, newPos.y)] = true;
 
 		return true;
 	}
@@ -239,26 +197,21 @@ coord gameMap::addPlayer()
 	using random = effolkronium::random_static;
 
 	std::vector<coord> validPos;
-	int x{0};
-	int y{0};
+	int ind{0};
 
-	for(auto &e : m_level)
+	for(auto e : m_level)
 	{
-		for(auto &ee : e)
-		{
-			if(ee == 1)
-				validPos.push_back({x,y});
-			x++;
-		}
+		if(e == 1)
+			validPos.push_back({ind%m_levelWidth,ind/m_levelWidth});
+		
+		ind++;
 
-		x = 0;
-		y++;
-	}
+	};
 	
 	coord playerPos{*random::get(validPos)};
 
-	m_level[playerPos.y][playerPos.x] = 2;
-	m_levelTouched[playerPos.y][playerPos.x] = true;
+	m_level[ind2d(playerPos.x, playerPos.y)] = 2;
+	m_levelTouched[ind2d(playerPos.x, playerPos.y)] = true;
 	m_importantTiles.push_back({{playerPos.x, playerPos.y}, tileType::TILE_PLAYER});
 
 	return playerPos;
