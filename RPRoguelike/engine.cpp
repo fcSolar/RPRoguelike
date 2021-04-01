@@ -39,10 +39,9 @@ void engine::run()
 	m_SDLToInternalKeymap.insert({SDLK_SPACE, keyCode::KEY_SPACE});
 
 
-	level.generate(
-		std::make_pair<coord, coord>({0,0}, {WINDOW_WIDTH / m_tileWidth, 
-									 WINDOW_HEIGHT / m_tileHeight}));
-	level.addPlayer();
+	level.generate({{0,0}, WINDOW_WIDTH / m_tileWidth,
+						WINDOW_HEIGHT / m_tileHeight});
+	m_entities[0]->update(level.addPlayer());
 	level.draw();
 	
 	SDL_RenderPresent(m_renderer);
@@ -119,7 +118,7 @@ void engine::loadTexture(const char* path)
 	}
 }
 
-void engine::putTile(uint8_t tile, int x, int y)
+void engine::putTile(tileData tile)
 {
 	SDL_Rect srcR;
 	SDL_Rect dstR;
@@ -129,20 +128,20 @@ void engine::putTile(uint8_t tile, int x, int y)
 
 	dstR.w = m_tileWidth;
 	dstR.h = m_tileHeight;
-	dstR.x = x * m_tileWidth;
-	dstR.y = y * m_tileHeight;
+	dstR.x = tile.coords.x * m_tileWidth;
+	dstR.y = tile.coords.y * m_tileHeight;
 
-	switch(tile)
+	switch(tile.tileType)
 	{
-		case 0: //'#'
+		case e_tileType::TILE_WALL: //'#'
 			srcR.x = 3 * m_tileWidth;
 			srcR.y = 1 * m_tileHeight;
 			break;
-		case 1: //middle dot
+		case e_tileType::TILE_FLOOR: //middle dot
 			srcR.x = 25 * m_tileWidth;
 			srcR.y = 7 * m_tileHeight;
 			break;
-		case 2: //'@'
+		case e_tileType::TILE_PLAYER: //'@'
 			srcR.x = 0;
 			srcR.y = 2 * m_tileHeight;
 			break;
@@ -158,32 +157,36 @@ void engine::readMessages()
 	while(m_msgQueue.size() > 0)
 	{
 		std::shared_ptr<message> m1 = m_msgQueue.back();
+		m_msgQueue.pop_back();
+
 		switch(m1->m_messageType)
 		{
-			case msgType::MESSAGE_TYPE_PMOVE:
+			case msgType::PMOVE:
 			{
 				std::shared_ptr<msg_playerMove> m2 = std::static_pointer_cast<msg_playerMove>(m1);
-				if(level.movePlayer(m2->m_direction.first, m2->m_direction.second))
+				std::shared_ptr<message> m3 = level.movePlayer(m2);
+				
+				if(m3->m_messageType == msgType::UPDATE_PPOS)
 				{
 					level.draw();
 					SDL_RenderPresent(m_renderer);
+					m_msgQueue.push_back(m3);
 				}
-				
 				break;
 			}
-			case msgType::MESSAGE_TYPE_REGEN_MAP:
+			case msgType::UPDATE_PPOS:
+				m_entities[0]->update(m1);
+				break;
+			case msgType::REGEN_MAP:
 				level.clear();
-				level.clearImportantTiles();
-				level.generate(std::make_pair<coord, coord>({0,0}, {WINDOW_WIDTH / m_tileWidth,
-									 WINDOW_HEIGHT / m_tileHeight}));
-				level.addPlayer();
+				level.generate({{0,0}, WINDOW_WIDTH / m_tileWidth,
+									 WINDOW_HEIGHT / m_tileHeight});
+				m_entities[0]->update(level.addPlayer());
 				level.draw();
 				SDL_RenderPresent(m_renderer);
 				break;
 			default:
 				break;
 		}
-
-		m_msgQueue.pop_back();
 	}
 }

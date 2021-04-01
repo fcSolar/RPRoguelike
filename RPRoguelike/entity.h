@@ -3,6 +3,7 @@
 #include <vector>
 #include <memory>
 #include "message.h"
+#include "geom.h"
 
 enum entityTypes
 {
@@ -26,6 +27,7 @@ public:
 class ety_player : public entity
 {
 	std::shared_ptr<message> keyInput(keyCode key);
+	coord m_pos;
 
 public:
 	ety_player();

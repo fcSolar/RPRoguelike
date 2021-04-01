@@ -1,15 +1,16 @@
 #include "map.h"
 
 
-void gameMap::generate(std::pair<coord, coord> mapSize)
+void gameMap::generate(rect mapSize)
 {
-	m_levelWidth = mapSize.second.x - mapSize.first.x;
-	m_levelHeight = mapSize.second.y - mapSize.first.y;
+	m_levelWidth = mapSize.width;
+	m_levelHeight = mapSize.height;
 
 	for(int i = 0; i < m_levelWidth * m_levelHeight; i++)
 	{
-		m_level.push_back(0);
-		m_levelTouched.push_back(true);
+		m_level.push_back(tileData(e_tileType::TILE_WALL, 
+								   i % m_levelWidth, 
+								   i / m_levelWidth, TFLAG_TOUCHED));
 	}
 
 	bspNode *root = new bspNode(0, 0, 178, 57);
@@ -95,14 +96,14 @@ void gameMap::generate(std::pair<coord, coord> mapSize)
 
 		for(int i = std::min(pt1.x, pt2.x); i <= std::max(pt1.x, pt2.x); i++)
 		{
-			m_level[ind2d(i,xDrawLevel)] = 1;
-			m_levelTouched[ind2d(i,xDrawLevel)] = true;
+			m_level[ind2d(i,xDrawLevel)].tileType = e_tileType::TILE_FLOOR;
+			m_level[ind2d(i,xDrawLevel)].flags |= TFLAG_PASSABLE;
 		}
 
 		for(int i = std::min(pt1.y, pt2.y); i <= std::max(pt1.y, pt2.y); i++)
 		{
-			m_level[ind2d(yDrawLevel,i)] = 1;
-			m_levelTouched[ind2d(yDrawLevel,i)] = true;
+			m_level[ind2d(yDrawLevel, i)].tileType = e_tileType::TILE_FLOOR;
+			m_level[ind2d(yDrawLevel, i)].flags |= TFLAG_PASSABLE;
 		}
 	}};
 
@@ -136,26 +137,19 @@ void gameMap::generate(std::pair<coord, coord> mapSize)
 
 void gameMap::draw()
 {
-	int ind{0};
-
-	for(auto e : m_level)
+	for(auto &e : m_level)
 	{
-		
-			
-		if(m_levelTouched[ind])
+		if(e.flags & TFLAG_TOUCHED)
 		{
-			m_drawFn(e, ind % m_levelWidth, ind / m_levelWidth);
-			m_levelTouched[ind] = false;
+			m_drawFn(e);
+			e.flags &= ~TFLAG_TOUCHED;
 		}
-
-		ind++;
 	}
 }
 
 void gameMap::clear()
 {
 	m_level.clear();
-	m_levelTouched.clear();
 }
 
 
@@ -165,59 +159,52 @@ void gameMap::drawRoom(rect rm)
 	{
 		for(int j = rm.pos.x; j < rm.pos.x + rm.width; j++)
 		{
-			m_level[ind2d(j,i)] = 1;
-			m_levelTouched[ind2d(j, i)] = true;
+			m_level[ind2d(j,i)].tileType = e_tileType::TILE_FLOOR;
+			m_level[ind2d(j, i)].flags |= (TFLAG_TOUCHED | TFLAG_PASSABLE);
 		}
 	}
 }
 
-bool gameMap::movePlayer(int x, int y)
+std::shared_ptr<message> gameMap::movePlayer(const std::shared_ptr<msg_playerMove> &msg)
 {
-	coord oldPos{m_importantTiles.at(0).coords};
-	coord newPos{oldPos.x + x,oldPos.y + y};
+	coord oldPos{msg->currentPos};
+	coord newPos{oldPos.x + msg->m_direction.first, oldPos.y + msg->m_direction.second};
 	
-	if(m_level[ind2d(newPos.x, newPos.y)] != 0)
+	if(m_level[ind2d(newPos.x, newPos.y)].flags & tileFlags::TFLAG_PASSABLE)
 	{
-		m_importantTiles[0].coords = {oldPos.x + x, oldPos.y + y};
 
-		m_level[ind2d(oldPos.x,oldPos.y)] = 1;
-		m_level[ind2d(newPos.x, newPos.y)] = 2;
 
-		m_levelTouched[ind2d(oldPos.x, oldPos.y)] = true;
-		m_levelTouched[ind2d(newPos.x, newPos.y)] = true;
+		m_level[ind2d(oldPos.x, oldPos.y)].tileType = e_tileType::TILE_FLOOR;
+		m_level[ind2d(newPos.x, newPos.y)].tileType = e_tileType::TILE_PLAYER;
+		
+		m_level[ind2d(oldPos.x, oldPos.y)].flags |= TFLAG_TOUCHED;
+		m_level[ind2d(newPos.x, newPos.y)].flags |= TFLAG_TOUCHED;
 
-		return true;
+
+		return std::shared_ptr<msg_playerPos>(new msg_playerPos(newPos));
 	}
 	else
-		return false;
+		return std::shared_ptr<msg_Failure>(new msg_Failure);
 }
 
-coord gameMap::addPlayer()
+std::shared_ptr<msg_playerPos> gameMap::addPlayer()
 {
 	using random = effolkronium::random_static;
 
 	std::vector<coord> validPos;
 	int ind{0};
 
-	for(auto e : m_level)
+	for(auto &e : m_level)
 	{
-		if(e == 1)
+		if(e.flags & TFLAG_PASSABLE)
 			validPos.push_back({ind%m_levelWidth,ind/m_levelWidth});
-		
 		ind++;
-
 	};
 	
 	coord playerPos{*random::get(validPos)};
 
-	m_level[ind2d(playerPos.x, playerPos.y)] = 2;
-	m_levelTouched[ind2d(playerPos.x, playerPos.y)] = true;
-	m_importantTiles.push_back({{playerPos.x, playerPos.y}, tileType::TILE_PLAYER});
+	m_level[ind2d(playerPos.x, playerPos.y)].tileType = e_tileType::TILE_PLAYER;
+	m_level[ind2d(playerPos.x, playerPos.y)].flags |= TFLAG_TOUCHED;
 
-	return playerPos;
-}
-
-void gameMap::clearImportantTiles()
-{
-	m_importantTiles.clear();
+	return std::shared_ptr<msg_playerPos>(new msg_playerPos(playerPos));
 }

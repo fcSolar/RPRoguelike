@@ -184,6 +184,7 @@ xcopy "$(ProjectDir)font4.png" "$(TargetDir)" /d /i /r /y</Command>
     <ClInclude Include="engine.h" />
     <ClInclude Include="map.h" />
     <ClInclude Include="message.h" />
+    <ClInclude Include="tiles.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

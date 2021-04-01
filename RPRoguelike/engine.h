@@ -38,8 +38,8 @@ class engine
 
 	std::vector<std::shared_ptr<message>> m_msgQueue;
 
-	std::function<void(uint8_t tile, int x, int y)> 
-		drawFn = [&](auto tile, auto x, auto y) { putTile(tile, x, y); };
+	std::function<void(tileData tile)> 
+		drawFn = [&](tileData tile) { putTile(tile); };
 
 public:
 	void init();
@@ -48,7 +48,7 @@ public:
 
 private:
 	void loadTexture(const char* path);
-	void putTile(uint8_t tile, int x, int y); //TODO: change to take tileData struct
+	void putTile(tileData tile);
 	void readMessages();
 };
 
