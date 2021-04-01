@@ -1,22 +1,16 @@
 #include "map.h"
 
 
-void gameMap::generate(std::pair<coord, coord> mapSize)
+void gameMap::generate(rect mapSize)
 {
+	m_levelWidth = mapSize.width;
+	m_levelHeight = mapSize.height;
 
-	for(int i{0}; i < (mapSize.second.y - mapSize.first.y); i++)
+	for(int i = 0; i < m_levelWidth * m_levelHeight; i++)
 	{
-		std::vector<uint8_t> temp;
-		std::vector<bool> temp2;
-
-		for(int j{0}; j < (mapSize.second.x - mapSize.first.x); j++)
-		{
-			temp.push_back(0);
-			temp2.push_back(true);
-		}
-
-		m_level.push_back(temp);
-		m_levelTouched.push_back(temp2);
+		m_level.push_back(tileData(e_tileType::TILE_WALL, 
+								   i % m_levelWidth, 
+								   i / m_levelWidth, TFLAG_TOUCHED));
 	}
 
 	bspNode *root = new bspNode(0, 0, 178, 57);
@@ -27,7 +21,7 @@ void gameMap::generate(std::pair<coord, coord> mapSize)
 
 	std::vector<bspNode*> temp;
 
-	for(int i = 0; i < 7; i++)
+	for(int i = 0; i < 8; i++)
 	{
 		for(auto e : tree)
 		{
@@ -66,207 +60,73 @@ void gameMap::generate(std::pair<coord, coord> mapSize)
 		}
 	}
 
-	auto drawHallHoriz{[this](int first, int second, int third) 
-					   { 
-						   for(int i = first; i < first + second; i++) 
-						   { 
-							   m_level[third][i] = 1;
-							   m_levelTouched[third][i] = true;
-						   } 
-					   }};
-
-	auto drawHallVert{[this](int first, int second, int third) 
-					  { 
-						  for(int i = first; i < first + second; i++) 
-						  { 
-							  m_level[i][third] = 1; 
-							  m_levelTouched[i][third] = true;
-						  } 
-					  }};
-
-	coord p1{-1,-1};
-	coord p2{-1,-1};
-
-	for(auto &e : pts)
+	auto drawHalls{[this, mapSize](coord pt1, coord pt2)
 	{
-		using random = effolkronium::random_static;
+		int xDrawLevel{-1};
+		int yDrawLevel{-1};
 
-		if(p1.x == -1 && p2.x == -1)
+		if(pt1.y > pt2.y)
 		{
-			p1 = e;
-		}
-		else if(p1.x != -1 && p2.x == -1)
-		{
-			
-			p2 = e;
-
-			int w{p2.x - p1.x};
-			int h{p2.y - p1.y};
-
-			if(w < 0)
+			if(pt1.x > pt2.x)
 			{
-				if(h < 0)
-				{
-					if(random::get<bool>())
-					{
-						drawHallHoriz(p2.x, abs(w), p1.y);
-						drawHallVert(p2.y, abs(h), p2.x);
-					}
-					else
-					{
-						drawHallHoriz(p2.x, abs(w), p2.y);
-						drawHallVert(p2.y, abs(h), p2.x);
-					}
-				}
-				else if(h > 0)
-				{
-					if(random::get<bool>())
-					{
-						drawHallHoriz(p2.x, abs(w), p1.y);
-						drawHallVert(p1.y, abs(h), p2.x);
-					}
-					else
-					{
-						drawHallHoriz(p2.x, abs(w), p2.y);
-						drawHallVert(p1.y, abs(h), p1.x);
-					}
-				}
-				else
-				{
-					drawHallHoriz(p2.x, abs(w), p2.y);
-				}
-			}
-			else if(w > 0)
-			{
-				if(h < 0)
-				{
-					if(random::get<bool>())
-					{
-						drawHallHoriz(p1.x, abs(w), p2.y);
-						drawHallVert(p2.y, abs(h), p1.x);
-					}
-					else
-					{
-						drawHallHoriz(p1.x, abs(w), p1.y);
-						drawHallVert(p2.y, abs(h), p2.x);
-					}
-				}
-				else if(h > 0)
-				{
-					if(p1.y + h >= mapSize.second.y)
-					{
-						drawHallHoriz(p1.x, abs(w), p1.y);
-						drawHallVert(p2.y, abs(h), p2.x);
-					}
-					else
-					{
-						drawHallHoriz(p1.x, abs(w), p2.y);
-						drawHallVert(p1.y, abs(h), p1.y);
-					}
-				}
-				else
-				{
-					drawHallHoriz(p1.x, abs(w), p1.y);
-				}
+				xDrawLevel = pt1.y;
+				yDrawLevel = pt2.x;
 			}
 			else
 			{
-				if(h < 0)
-				{
-					drawHallVert(p2.y, abs(h), p2.x);
-				}
-				else
-				{
-					drawHallVert(p1.y, abs(h), p1.x);
-				}
+				xDrawLevel = pt2.y;
+				yDrawLevel = pt1.x;
 			}
+
+		}
+		else
+		{
+			if(pt1.x > pt2.x)
+			{
+				xDrawLevel = pt2.y;
+				yDrawLevel = pt1.x;
+			}
+			else
+			{
+				xDrawLevel = pt1.y;
+				yDrawLevel = pt2.x;
+			}
+		}
+
+
+		for(int i = std::min(pt1.x, pt2.x); i <= std::max(pt1.x, pt2.x); i++)
+		{
+			m_level[ind2d(i,xDrawLevel)].tileType = e_tileType::TILE_FLOOR;
+			m_level[ind2d(i,xDrawLevel)].flags |= TFLAG_PASSABLE;
+		}
+
+		for(int i = std::min(pt1.y, pt2.y); i <= std::max(pt1.y, pt2.y); i++)
+		{
+			m_level[ind2d(yDrawLevel, i)].tileType = e_tileType::TILE_FLOOR;
+			m_level[ind2d(yDrawLevel, i)].flags |= TFLAG_PASSABLE;
+		}
+	}};
+
+	coord p1{-1,-1};
+	coord p2{-1,-1};
+	int it{0};
+
+	for(auto &e : pts)
+	{
+		
+		if(it == 0)
+		{
+			p2 = e;
 		}
 		else
 		{
 			p1 = p2;
 			p2 = e;
-
-			int w{p2.x - p1.x};
-			int h{p2.y - p1.y};
-
-			if(w < 0)
-			{
-				if(h < 0)
-				{
-					if(random::get<bool>())
-					{
-						drawHallHoriz(p2.x, abs(w), p1.y);
-						drawHallVert(p2.y, abs(h), p2.x);
-					}
-					else
-					{
-						drawHallHoriz(p2.x, abs(w), p2.y);
-						drawHallVert(p2.y, abs(h), p2.x);
-					}
-				}
-				else if(h > 0)
-				{
-					if(random::get<bool>())
-					{
-						drawHallHoriz(p2.x, abs(w), p1.y);
-						drawHallVert(p1.y, abs(h), p2.x);
-					}
-					else
-					{
-						drawHallHoriz(p2.x, abs(w), p2.y);
-						drawHallVert(p1.y, abs(h), p1.x);
-					}
-				}
-				else
-				{
-					drawHallHoriz(p2.x, abs(w), p2.y);
-				}
-			}
-			else if(w > 0)
-			{
-				if(h < 0)
-				{
-					if(random::get<bool>())
-					{
-						drawHallHoriz(p1.x, abs(w), p2.y);
-						drawHallVert(p2.y, abs(h), p1.x);
-					}
-					else
-					{
-						drawHallHoriz(p1.x, abs(w), p1.y);
-						drawHallVert(p2.y, abs(h), p2.x);
-					}
-				}
-				else if(h > 0)
-				{
-					if(p1.y + h >= mapSize.second.y)
-					{
-						drawHallHoriz(p1.x, abs(w), p1.y);
-						drawHallVert(p2.y, abs(h), p2.x);
-					}
-					else
-					{
-						drawHallHoriz(p1.x, abs(w), p2.y);
-						drawHallVert(p1.y, abs(h), p1.x);
-					}
-				}
-				else
-				{
-					drawHallHoriz(p1.x, abs(w), p1.y);
-				}
-			}
-			else
-			{
-				if(h < 0)
-				{
-					drawHallVert(p2.y, abs(h), p2.x);
-				}
-				else
-				{
-					drawHallVert(p1.y, abs(h), p1.x);
-				}
-			}
+			
+			drawHalls(p1, p2);
 		}
+
+		it++;
 	}
 
 	for(auto e : tree)
@@ -277,43 +137,19 @@ void gameMap::generate(std::pair<coord, coord> mapSize)
 
 void gameMap::draw()
 {
-	int x{0};
-	int y{0};
-
 	for(auto &e : m_level)
 	{
-		for(auto &ee : e)
+		if(e.flags & TFLAG_TOUCHED)
 		{
-			
-			if(m_levelTouched[y][x])
-			{
-				m_drawFn(ee, x, y);
-				m_levelTouched[y][x] = false;
-			}
-				
-
-			x++;
+			m_drawFn(e);
+			e.flags &= ~TFLAG_TOUCHED;
 		}
-
-		x = 0;
-		y++;
 	}
 }
 
 void gameMap::clear()
 {
-	for(auto &e : m_level)
-	{
-		e.clear();
-	}
-
-	for(auto &e : m_levelTouched)
-	{
-		e.clear();
-	}
-
 	m_level.clear();
-	m_levelTouched.clear();
 }
 
 
@@ -323,58 +159,52 @@ void gameMap::drawRoom(rect rm)
 	{
 		for(int j = rm.pos.x; j < rm.pos.x + rm.width; j++)
 		{
-			m_level[i][j] = 1;
-			m_levelTouched[i][j] = true;
+			m_level[ind2d(j,i)].tileType = e_tileType::TILE_FLOOR;
+			m_level[ind2d(j, i)].flags |= (TFLAG_TOUCHED | TFLAG_PASSABLE);
 		}
 	}
 }
 
-bool gameMap::movePlayer(int x, int y)
+std::shared_ptr<message> gameMap::movePlayer(const std::shared_ptr<msg_playerMove> &msg)
 {
-	coord oldPos = m_importantTiles.at(0).coords;
+	coord oldPos{msg->currentPos};
+	coord newPos{oldPos.x + msg->m_direction.first, oldPos.y + msg->m_direction.second};
 	
-	if(m_level[oldPos.y + y][oldPos.x + x] != 0)
+	if(m_level[ind2d(newPos.x, newPos.y)].flags & tileFlags::TFLAG_PASSABLE)
 	{
-		m_importantTiles.at(0).coords = {oldPos.x + x, oldPos.y + y};
 
-		m_level[oldPos.y][oldPos.x] = 1;
-		m_level[oldPos.y + y][oldPos.x + x] = 2;
 
-		m_levelTouched[oldPos.y][oldPos.x] = true;
-		m_levelTouched[oldPos.y + y][oldPos.x + x] = true;
+		m_level[ind2d(oldPos.x, oldPos.y)].tileType = e_tileType::TILE_FLOOR;
+		m_level[ind2d(newPos.x, newPos.y)].tileType = e_tileType::TILE_PLAYER;
+		
+		m_level[ind2d(oldPos.x, oldPos.y)].flags |= TFLAG_TOUCHED;
+		m_level[ind2d(newPos.x, newPos.y)].flags |= TFLAG_TOUCHED;
 
-		return true;
+
+		return std::shared_ptr<msg_playerPos>(new msg_playerPos(newPos));
 	}
 	else
-		return false;
+		return std::shared_ptr<msg_Failure>(new msg_Failure);
 }
 
-coord gameMap::addPlayer()
+std::shared_ptr<msg_playerPos> gameMap::addPlayer()
 {
 	using random = effolkronium::random_static;
 
 	std::vector<coord> validPos;
-	int x{0};
-	int y{0};
+	int ind{0};
 
 	for(auto &e : m_level)
 	{
-		for(auto &ee : e)
-		{
-			if(ee == 1)
-				validPos.push_back({x,y});
-			x++;
-		}
-
-		x = 0;
-		y++;
-	}
+		if(e.flags & TFLAG_PASSABLE)
+			validPos.push_back({ind%m_levelWidth,ind/m_levelWidth});
+		ind++;
+	};
 	
 	coord playerPos{*random::get(validPos)};
 
-	m_level[playerPos.y][playerPos.x] = 2;
-	m_levelTouched[playerPos.y][playerPos.x] = true;
-	m_importantTiles.push_back({{playerPos.x, playerPos.y}, 2});
+	m_level[ind2d(playerPos.x, playerPos.y)].tileType = e_tileType::TILE_PLAYER;
+	m_level[ind2d(playerPos.x, playerPos.y)].flags |= TFLAG_TOUCHED;
 
-	return playerPos;
+	return std::shared_ptr<msg_playerPos>(new msg_playerPos(playerPos));
 }

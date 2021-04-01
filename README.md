@@ -4,4 +4,4 @@ This is mostly a learning project, I don't really have anything to contribute to
 Right now there's not much to do. Really all you can do is walk around a bit
 
 # Build Instructions
-I'm gonna be real with you here, chief I legit have no clue. If you're on windows and use visual studio, then you could probably just open up the Solution file and click the build and run button. However, beyond that I can't help. I'll try to figure something out later.
+I'm gonna be real with you here, chief I legit have no clue. If you're on windows and use visual studio, then you could probably just open up the Solution file and click the 'build solution' (Ctrl+shift+b) button under the 'build' menu. However, beyond that I can't help. I'll try to figure something out later.

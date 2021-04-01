@@ -20,7 +20,7 @@ void engine::init()
 
 	loadTexture("font4.png");
 }
-
+ 
 void engine::run()
 {
 	bool running{true};
@@ -29,19 +29,19 @@ void engine::run()
 	
 	level.bindDrawFn(drawFn);
 
-	m_entities.emplace_back(new player);
-	
+	m_entities.emplace_back(new ety_player);
+	std::unique_ptr<entity>& player{m_entities[0]};
+
 	m_SDLToInternalKeymap.insert({SDLK_UP, keyCode::KEY_UP});
 	m_SDLToInternalKeymap.insert({SDLK_DOWN, keyCode::KEY_DOWN});
 	m_SDLToInternalKeymap.insert({SDLK_LEFT, keyCode::KEY_LEFT});
 	m_SDLToInternalKeymap.insert({SDLK_RIGHT, keyCode::KEY_RIGHT});
+	m_SDLToInternalKeymap.insert({SDLK_SPACE, keyCode::KEY_SPACE});
 
 
-
-	level.generate(
-		std::make_pair<coord, coord>({0,0}, {WINDOW_WIDTH / m_tileWidth, 
-									 WINDOW_HEIGHT / m_tileHeight}));
-	level.addPlayer();
+	level.generate({{0,0}, WINDOW_WIDTH / m_tileWidth,
+						WINDOW_HEIGHT / m_tileHeight});
+	m_entities[0]->update(level.addPlayer());
 	level.draw();
 	
 	SDL_RenderPresent(m_renderer);
@@ -70,7 +70,7 @@ void engine::run()
 				std::shared_ptr<message> e_Msg(new msg_KeyPress(e_KeyCode));
 				std::shared_ptr<message> r_Msg{nullptr};
 				
-				r_Msg = m_entities.at(0)->update(e_Msg);
+				r_Msg = player->update(e_Msg);
 				
 				m_msgQueue.emplace_back(r_Msg);
 
@@ -87,7 +87,6 @@ void engine::run()
 			readMessages();
 
 		newMessage = false;
-
 	}
 }
 
@@ -97,9 +96,10 @@ void engine::exit()
 	SDL_Quit();
 }
 
-void engine::loadTexture(std::string path)
+
+void engine::loadTexture(const char* path)
 {
-	SDL_Surface *surf = IMG_Load(path.c_str());
+	SDL_Surface *surf = IMG_Load(path);
 
 	if(surf)
 	{
@@ -118,25 +118,7 @@ void engine::loadTexture(std::string path)
 	}
 }
 
-void engine::putTile(int tileX, int tileY, int x, int y)
-{
-	SDL_Rect srcR;
-	SDL_Rect dstR;
-
-	srcR.w = m_tileWidth;
-	srcR.h = m_tileHeight;
-	srcR.x = tileX * m_tileWidth;
-	srcR.y = tileY * m_tileHeight;
-
-	dstR.w = m_tileWidth;
-	dstR.h = m_tileHeight;
-	dstR.x = x * m_tileWidth;
-	dstR.y = y * m_tileHeight;
-
-	SDL_RenderCopy(m_renderer, m_sheet, &srcR, &dstR);
-}
-
-void engine::putTile(uint8_t tile, int x, int y)
+void engine::putTile(tileData tile)
 {
 	SDL_Rect srcR;
 	SDL_Rect dstR;
@@ -146,20 +128,20 @@ void engine::putTile(uint8_t tile, int x, int y)
 
 	dstR.w = m_tileWidth;
 	dstR.h = m_tileHeight;
-	dstR.x = x * m_tileWidth;
-	dstR.y = y * m_tileHeight;
+	dstR.x = tile.coords.x * m_tileWidth;
+	dstR.y = tile.coords.y * m_tileHeight;
 
-	switch(tile)
+	switch(tile.tileType)
 	{
-		case 0: //'#'
+		case e_tileType::TILE_WALL: //'#'
 			srcR.x = 3 * m_tileWidth;
 			srcR.y = 1 * m_tileHeight;
 			break;
-		case 1: //middle dot
+		case e_tileType::TILE_FLOOR: //middle dot
 			srcR.x = 25 * m_tileWidth;
 			srcR.y = 7 * m_tileHeight;
 			break;
-		case 2: //'@'
+		case e_tileType::TILE_PLAYER: //'@'
 			srcR.x = 0;
 			srcR.y = 2 * m_tileHeight;
 			break;
@@ -167,7 +149,6 @@ void engine::putTile(uint8_t tile, int x, int y)
 			break;
 	}
 	SDL_RenderCopy(m_renderer, m_sheet, &srcR, &dstR);
-	//SDL_RenderPresent(m_renderer);
 }
 
 
@@ -176,23 +157,36 @@ void engine::readMessages()
 	while(m_msgQueue.size() > 0)
 	{
 		std::shared_ptr<message> m1 = m_msgQueue.back();
+		m_msgQueue.pop_back();
+
 		switch(m1->m_messageType)
 		{
-			case msgType::MESSAGE_TYPE_PMOVE:
+			case msgType::PMOVE:
 			{
 				std::shared_ptr<msg_playerMove> m2 = std::static_pointer_cast<msg_playerMove>(m1);
-				if(level.movePlayer(m2->m_direction.first, m2->m_direction.second))
+				std::shared_ptr<message> m3 = level.movePlayer(m2);
+				
+				if(m3->m_messageType == msgType::UPDATE_PPOS)
 				{
 					level.draw();
 					SDL_RenderPresent(m_renderer);
+					m_msgQueue.push_back(m3);
 				}
-				
 				break;
 			}
+			case msgType::UPDATE_PPOS:
+				m_entities[0]->update(m1);
+				break;
+			case msgType::REGEN_MAP:
+				level.clear();
+				level.generate({{0,0}, WINDOW_WIDTH / m_tileWidth,
+									 WINDOW_HEIGHT / m_tileHeight});
+				m_entities[0]->update(level.addPlayer());
+				level.draw();
+				SDL_RenderPresent(m_renderer);
+				break;
 			default:
 				break;
 		}
-
-		m_msgQueue.pop_back();
 	}
 }
