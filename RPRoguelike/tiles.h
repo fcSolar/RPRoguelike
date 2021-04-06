@@ -53,6 +53,19 @@ inline tileFlags operator~(tileFlags rhs)
 	return static_cast<tileFlags>(~static_cast<int>(rhs));
 }
 
+
+
+struct Colour
+{
+	uint8_t r{255};
+	uint8_t g{255};
+	uint8_t b{255};
+};																		
+
+const Colour cGrey{0xCC,0xCC,0xCC};
+const Colour cLightBlue{0x00,0xCC,0xFF};
+
+
 struct tileData
 {
 	coord coords;
@@ -60,8 +73,10 @@ struct tileData
 
 	tileFlags flags{TFLAG_NULL};
 
-	tileData(e_tileType type, int x, int y, tileFlags flagSet = TFLAG_NULL)
-		: coords{x,y}, tileType{type}
+	Colour colour;
+
+	tileData(e_tileType type, int x, int y, Colour setColour, tileFlags flagSet = TFLAG_NULL)
+		: coords{x,y}, tileType{type}, colour{setColour}
 	{
 		flags |= flagSet;
 	}

@@ -131,6 +131,8 @@ void engine::putTile(tileData tile)
 	dstR.x = tile.coords.x * m_tileWidth;
 	dstR.y = tile.coords.y * m_tileHeight;
 
+	Colour colour = tile.colour;
+
 	switch(tile.tileType)
 	{
 		case e_tileType::TILE_WALL: //'#'
@@ -148,6 +150,8 @@ void engine::putTile(tileData tile)
 		default:
 			break;
 	}
+
+	SDL_SetTextureColorMod(m_sheet, colour.r, colour.g, colour.b);
 	SDL_RenderCopy(m_renderer, m_sheet, &srcR, &dstR);
 }
 

@@ -10,7 +10,9 @@ void gameMap::generate(rect mapSize)
 	{
 		m_level.push_back(tileData(e_tileType::TILE_WALL, 
 								   i % m_levelWidth, 
-								   i / m_levelWidth, TFLAG_TOUCHED));
+								   i / m_levelWidth, 
+								   cGrey,
+								   TFLAG_TOUCHED));
 	}
 
 	bspNode *root = new bspNode(0, 0, 178, 57);
@@ -175,7 +177,9 @@ std::shared_ptr<message> gameMap::movePlayer(const std::shared_ptr<msg_playerMov
 
 
 		m_level[ind2d(oldPos.x, oldPos.y)].tileType = e_tileType::TILE_FLOOR;
+		m_level[ind2d(oldPos.x, oldPos.y)].colour = cGrey;
 		m_level[ind2d(newPos.x, newPos.y)].tileType = e_tileType::TILE_PLAYER;
+		m_level[ind2d(newPos.x, newPos.y)].colour = cLightBlue;
 		
 		m_level[ind2d(oldPos.x, oldPos.y)].flags |= TFLAG_TOUCHED;
 		m_level[ind2d(newPos.x, newPos.y)].flags |= TFLAG_TOUCHED;
@@ -205,6 +209,7 @@ std::shared_ptr<msg_playerPos> gameMap::addPlayer()
 
 	m_level[ind2d(playerPos.x, playerPos.y)].tileType = e_tileType::TILE_PLAYER;
 	m_level[ind2d(playerPos.x, playerPos.y)].flags |= TFLAG_TOUCHED;
+	m_level[ind2d(playerPos.x, playerPos.y)].colour = cLightBlue;
 
 	return std::shared_ptr<msg_playerPos>(new msg_playerPos(playerPos));
 }
